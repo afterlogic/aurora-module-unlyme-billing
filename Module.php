@@ -29,19 +29,12 @@ class Module extends \Aurora\System\Module\AbstractModule
         // @TODO review MailQuota check
         $this->subscribeEvent('Mail::CreateAccount::after', array($this, 'onAfterCreateAccount'));
 
-        // @TODO: cPanel aliases are not used, but Dovecot aliases are used
-        // $this->subscribeEvent('CpanelIntegrator::CreateAlias::before', array($this, 'onBeforeCreateAlias'));
-        // $this->subscribeEvent('CpanelIntegrator::AddNewAlias::before', array($this, 'onBeforeAddNewAlias'));
-        // $this->subscribeEvent('CpanelIntegrator::AddNewAlias::after', array($this, 'onAfterCreateAlias'));
-        // $this->subscribeEvent('CpanelIntegrator::GetSettings::after', array($this, 'onAfterGetSettings'));
-
         $this->subscribeEvent('Files::GetSettingsForEntity::after', array($this, 'onAfterGetSettingsForEntity'));
 
         $this->subscribeEvent('Core::CreateUser::before', array($this, 'onBeforeCreateUser'));
+        $this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
         $this->subscribeEvent('Core::CreateTenant::after', array($this, 'onAfterCreateTenant'));
         $this->subscribeEvent('Core::UpdateTenant::after', array($this, 'onAfterUpdateTenant'));
-        $this->subscribeEvent('Core::Tenant::ToResponseArray', array($this, 'onTenantToResponseArray'));
-        $this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
 
         // check if mailbox is allowed for creation
         $this->subscribeEvent('Mail::CreateAccount::before', array($this, 'onBeforeCreateAccount'));
@@ -73,32 +66,6 @@ class Module extends \Aurora\System\Module\AbstractModule
                 ];
             }
         }
-
-        // $aBusinessTenantLimits = $this->oModuleSettings->BusinessTenantLimits;
-        // if (is_array($aBusinessTenantLimits) && count($aBusinessTenantLimits) > 0 && is_array($aBusinessTenantLimits[0])) {
-        //     $aBusinessTenantLimits = $aBusinessTenantLimits[0];
-        // } else {
-        //     $aBusinessTenantLimits = [];
-        // }
-
-        // \Aurora\Modules\Core\Classes\Tenant::extend(
-        // 	self::GetName(),
-        // 	[
-        // 		'IsBusiness' => array('bool', false),
-        // 		'AliasesCount' => array('int', isset($aBusinessTenantLimits['AliasesCount']) ? $aBusinessTenantLimits['AliasesCount'] : 0),
-        // 		'EmailAccountsCount' => array('int', isset($aBusinessTenantLimits['EmailAccountsCount']) ? $aBusinessTenantLimits['EmailAccountsCount'] : 0),
-        // 	]
-        // );
-
-        // \Aurora\Modules\Core\Classes\User::extend(
-        // 	self::GetName(),
-        // 	[
-        // 		'EmailSentCount' => array('int', 0),
-        // 		'EmailSentDate' => array('datetime', date('Y-m-d'), true),
-        // 		'TotalAliasCount' => ['int', 0], //count of active and deleted aliases
-        // 		'LastAliasCreationDate' => ['datetime', date('Y-m-d H:i:s', 0), true] //time of last created alias (still active or already deleted) for the account
-        // 	]
-        // );
     }
 
     /**
@@ -151,138 +118,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         return false;
     }
 
-    // protected function getGroupSetting($iUserId, $sSettingName)
-    // {
-    //     $aAllSettings = null;
-    //     $oCoreUserGroupsDecorator = \Aurora\Modules\CoreUserGroups\Module::Decorator();
-    //     $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserWithoutRoleCheck($iUserId);
-    //     if ($oCoreUserGroupsDecorator && $oUser instanceof User) {
-    //         $oGroup = $oCoreUserGroupsDecorator->GetGroup($oUser->{'CoreUserGroups::GroupId'});
-    //         if (!($oGroup instanceof \Aurora\Modules\CoreUserGroups\Models\Group)) {
-    //             $oGroup = $oCoreUserGroupsDecorator->GetDefaultGroup($oUser->IdTenant);
-    //         }
-    //         $aAllSettings = $this->getAllSettingsOfGroup($oGroup);
-    //     }
-    //     return is_array($aAllSettings) && isset($aAllSettings[$sSettingName]) ? $aAllSettings[$sSettingName] : null;
-    // }
-
-    /**
-     * Obtains all settings for group.
-     * If group is specified and its settings are saved in DB, then obtains settings from DB.
-     * If group is specified and its settings are not saved in DB, then obtains settings from config file by group name.
-     * If group is not specified or there are no settings for the group name in config file, then obtains settings from config file for the first group in the list.
-     * @param \Aurora\Modules\CoreUserGroups\Models\Group|null $oGroup
-     * @return array|null
-     */
-    // protected function getAllSettingsOfGroup($oGroup)
-    // {
-    //     $aAllSettings = null;
-
-    //     if ($oGroup instanceof \Aurora\Modules\CoreUserGroups\Models\Group && $oGroup->{self::GetName() . '::DataSavedInDb'}) {
-    //         $aAllSettings = [
-    //             'EmailSendLimitPerDay' => $oGroup->{self::GetName() . '::EmailSendLimitPerDay'},
-    //             'MailSignature' => $oGroup->{self::GetName() . '::MailSignature'},
-    //             'MailQuotaMb' => $oGroup->{self::GetName() . '::MailQuotaMb'},
-    //             'FilesQuotaMb' => $oGroup->{self::GetName() . '::FilesQuotaMb'},
-    //             'AllowMobileApps' => $oGroup->{self::GetName() . '::AllowMobileApps'},
-    //             'BannerUrlMobile' => $oGroup->{self::GetName() . '::BannerUrlMobile'},
-    //             'BannerUrlDesktop' => $oGroup->{self::GetName() . '::BannerUrlDesktop'},
-    //             'BannerLink' => $oGroup->{self::GetName() . '::BannerLink'},
-    //             'MaxAllowedActiveAliasCount' => $oGroup->{self::GetName() . '::MaxAllowedActiveAliasCount'},
-    //             'AliasCreationIntervalDays' => $oGroup->{self::GetName() . '::AliasCreationIntervalDays'},
-    //         ];
-    //     } else {
-    //         $aGroupsLimits = $this->oModuleSettings->GroupsLimits;
-    //         $iIndex = false;
-    //         if ($oGroup instanceof \Aurora\Modules\CoreUserGroups\Models\Group) {
-    //             $iIndex = array_search($oGroup->Name, array_column($aGroupsLimits, 'GroupName'));
-    //         }
-    //         if ($iIndex === false) {
-    //             $iIndex = 0;
-    //         }
-    //         if (isset($aGroupsLimits[$iIndex]) && is_array($aGroupsLimits[$iIndex])) {
-    //             $aAllSettings = $aGroupsLimits[$iIndex];
-    //         }
-    //     }
-
-    //     return $aAllSettings;
-    // }
-
-    // protected function isUserNotFromBusinessTenant($oUser)
-    // {
-    //     if ($oUser instanceof User) {
-    //         $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($oUser->IdTenant);
-    //         if ($oTenant instanceof Tenant && !$oTenant->{self::GetName() . '::IsBusiness'}) {
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
-
-    /**
-     * This method overrides cPanel settings.
-     */
-    // public function onAfterGetSettings($aArgs, &$mResult)
-    // {
-    //     $oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-    //     if ($oAuthenticatedUser->Role === UserRole::TenantAdmin) {
-    //         $oTenant = \Aurora\Modules\Core\Module::Decorator()->getTenantsManager()->getTenantById($oAuthenticatedUser->IdTenant);
-    //         if ($oTenant && !$oTenant->{self::GetName() . '::IsBusiness'}) {
-    //             $mResult['AllowAliases'] = false;
-    //         }
-    //     } elseif ($oAuthenticatedUser->Role === UserRole::NormalUser) {
-    //         $oTenant = \Aurora\Modules\Core\Module::Decorator()->getTenantsManager()->getTenantById($oAuthenticatedUser->IdTenant);
-    //         if ($oTenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
-    //             $mResult['AllowAliases'] = false;
-    //         }
-    //     }
-    // }
-
-    // public function onBeforeCreateAlias($aArgs, &$mResult)
-    // {
-    //     $iTenantId = $aArgs['TenantId'];
-    //     $oTenant = \Aurora\Modules\Core\Module::Decorator()->getTenantsManager()->getTenantById($iTenantId);
-    //     if ($oTenant && $oTenant->{self::GetName() . '::IsBusiness'}) {//Business tenant
-    //         $iAliasesCountLimit = $this->getBusinessTenantLimits($oTenant, 'AliasesCount');
-    //         if (is_array($aArgs['DomainAliases']) && count($aArgs['DomainAliases']) >= $iAliasesCountLimit) {
-    //             throw new \Exception($this->i18N('ERROR_BUSINESS_TENANT_ALIASES_LIMIT_PLURAL', ['COUNT' => $iAliasesCountLimit], $iAliasesCountLimit));
-    //         }
-    //     } else {//not Business tenant
-    //         $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserWithoutRoleCheck($aArgs['UserId']);
-    //         $iMaxAllowedActiveAliasCount = $this->getGroupSetting($oUser->Id, 'MaxAllowedActiveAliasCount');
-    //         //how many days must pass since the user is allowed to create an alias again (once the user hit MaxAllowedActiveAliasCount limit)
-    //         $iAliasCreationIntervalDays = $this->getGroupSetting($oUser->Id, 'AliasCreationIntervalDays');
-    //         $bLimitedExceeded = true;
-    //         $iActualAliasesCount = is_array($aArgs['UserAliases']) ? count($aArgs['UserAliases']) : 0;
-    //         $dLastAliasCreationDatel = new \DateTime($oUser->{self::GetName() . '::LastAliasCreationDate'}, new \DateTimeZone('UTC'));
-    //         $dCurrentDate = new \DateTime('now', new \DateTimeZone('UTC'));
-    //         if ($iActualAliasesCount < $iMaxAllowedActiveAliasCount) {
-    //             if ($oUser->{self::GetName() . '::TotalAliasCount'} < $iMaxAllowedActiveAliasCount) {
-    //                 $bLimitedExceeded = false;
-    //             } elseif ($dLastAliasCreationDatel->modify("+{$iAliasCreationIntervalDays} day") < $dCurrentDate) {
-    //                 $bLimitedExceeded = false;
-    //             }
-    //         }
-    //         if ($bLimitedExceeded) {
-    //             throw new \Exception($this->i18N('ERROR_USER_ALIASES_LIMIT', ['COUNT' => $iMaxAllowedActiveAliasCount]));
-    //         }
-    //     }
-    // }
-
-    // public function onAfterCreateAlias($aArgs, &$mResult)
-    // {
-    //     $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserWithoutRoleCheck($aArgs['UserId']);
-    //     if ($this->isUserNotFromBusinessTenant($oUser)) {
-    //         $oCpanelIntegratorDecorator = \Aurora\System\Api::GetModuleDecorator('CpanelIntegrator');
-    //         $aGetAliasesResult = $oCpanelIntegratorDecorator ? $oCpanelIntegratorDecorator->GetAliases($oUser->Id) : [];
-    //         $iActualAliasesCount = isset($aGetAliasesResult['Aliases']) ? count($aGetAliasesResult['Aliases']) : 0;
-    //         $oUser->setExtendedProp(self::GetName() . '::TotalAliasCount', $iActualAliasesCount);
-    //         $dCurrentDate = new \DateTime('now', new \DateTimeZone('UTC'));
-    //         $oUser->setExtendedProp(self::GetName() . '::LastAliasCreationDate', $dCurrentDate->format('Y-m-d H:i:s'));
-    //         \Aurora\System\Managers\Eav::getInstance()->updateEntity($oUser);
-    //     }
-    // }
-
     /**
      * Check is tenant is a business tenant
      * 
@@ -333,19 +168,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
 
         return $bResult;
-    }
-
-    public function onTenantToResponseArray($aArgs, &$mResult)
-    {
-        $oTenant = $aArgs['Tenant'];
-        if ($oTenant instanceof Tenant && is_array($mResult)) {
-            $mResult[self::GetName() . '::IsBusiness'] = $oTenant->{self::GetName() . '::IsBusiness'};
-            $mResult[self::GetName() . '::EnableGroupware'] = $this->GetGroupwareState($oTenant->Id);
-            $mResult[self::GetName() . '::AliasesCount'] = $oTenant->{self::GetName() . '::AliasesCount'};
-            $mResult[self::GetName() . '::EmailAccountsCount'] = $oTenant->{self::GetName() . '::EmailAccountsCount'};
-            $mResult['Mail::TenantSpaceLimitMb'] = $oTenant->{'Mail::TenantSpaceLimitMb'};
-            $mResult['Files::TenantSpaceLimitMb'] = $oTenant->{'Files::TenantSpaceLimitMb'};
-        }
     }
 
     protected function getBusinessTenantLimits($oTenant, $sSettingName)
@@ -401,22 +223,6 @@ class Module extends \Aurora\System\Module\AbstractModule
             }
         }
     }
-
-    // TODO: is used for cPanel aliases
-    // public function onBeforeAddNewAlias($aArgs, &$mResult)
-    // {
-    //     if (
-    //         isset($aArgs['AliasName']) && isset($aArgs['AliasDomain'])
-    //         && $this->checkIfEmailReserved($aArgs['AliasName'] . '@' . $aArgs['AliasDomain'])
-    //     ) {
-    //         $oUser = \Aurora\System\Api::getAuthenticatedUser();
-    //         if ($oUser instanceof User && ($oUser->Role === UserRole::SuperAdmin || $oUser->Role === UserRole::TenantAdmin)) {
-    //             //Only SuperAdmin or TenantAdmin can creaete alias if it was reserved
-    //         } else {
-    //             throw new \Exception($this->i18N('ERROR_EMAIL_IS_RESERVED'));
-    //         }
-    //     }
-    // }
 
     /**
      * TODO: check user groups case
