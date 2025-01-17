@@ -6,12 +6,12 @@
       </div>
       <q-card flat bordered class="card-edit-settings">
         <q-card-section>
-          <div class="row q-mt-md">
+          <div class="row q-mb-sm">
             <div class="col-8">
               <q-checkbox dense v-model="isBusiness" :label="$t('BILLINGUNLYME.LABEL_ITS_BUSINESS_TENANT')" />
             </div>
           </div>
-          <div class="row q-my-sm">
+          <div class="row q-mb-md">
             <div class="col-8">
               <q-item-label caption>
                 {{ $t('BILLINGUNLYME.HINT_ITS_BUSINESS_TENANT_HTML') }}
@@ -25,7 +25,7 @@
           </div>
         </q-card-section>
       </q-card>
-      <div class="q-pa-md text-right">
+      <div class="q-pt-md text-right">
         <q-btn unelevated no-caps dense class="q-px-sm" :ripple="false" color="primary"
                :label="$t('COREWEBCLIENT.ACTION_SAVE')"
                @click="save"/>
