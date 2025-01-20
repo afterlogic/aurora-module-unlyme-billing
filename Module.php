@@ -190,11 +190,11 @@ class Module extends \Aurora\System\Module\AbstractModule
         $iTenantId = $aArgs['TenantId'];
         $oTenant = \Aurora\Modules\Core\Module::Decorator()->getTenantsManager()->getTenantById($iTenantId);
         if ($oTenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
-            $iEmailAccountsLimit = $this->getBusinessTenantLimits($oTenant, 'EmailAccountsCount');
-            if (is_int($iEmailAccountsLimit) && $iEmailAccountsLimit > 0) {
-                $iUserCount = User::where('IdTenant', $iTenantId)->count();
-                if ($iUserCount >= $iEmailAccountsLimit) {
-                    throw new \Exception($this->i18N('ERROR_BUSINESS_TENANT_EMAIL_ACCOUNTS_LIMIT_PLURAL', ['COUNT' => $iEmailAccountsLimit], $iEmailAccountsLimit));
+            $UserSlots = $oTenant->getExtendedProp(self::GetName() . '::UserSlots', 0);
+            if ($UserSlots > 0) {
+                $ActiveUserCount = User::where('IdTenant', $iTenantId)->where('IsDisabled', false)->count();
+                if ($ActiveUserCount - 1 >= $UserSlots) { // +1 - include tenant admin user
+                    throw new \Exception($this->i18N('ERROR_BUSINESS_TENANT_EMAIL_ACCOUNTS_LIMIT_PLURAL', ['COUNT' => $UserSlots], $ActiveUserCount));
                 }
             }
         }
@@ -221,6 +221,8 @@ class Module extends \Aurora\System\Module\AbstractModule
             } else {
                 throw new \Exception($this->i18N('ERROR_EMAIL_IS_RESERVED'));
             }
+        } else {
+            throw new \Exception($this->i18N('ERROR_EMAIL_IS_RESERVED'));
         }
     }
 
@@ -288,12 +290,9 @@ class Module extends \Aurora\System\Module\AbstractModule
         $iTenantId = $mResult;
         if (!empty($iTenantId)) {
             $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($iTenantId);
-            if ($oTenant && isset($aArgs[self::GetName() . '::IsBusiness']) && is_bool($aArgs[self::GetName() . '::IsBusiness'])) {
+            if ($oTenant) {
                 if (isset($aArgs[self::GetName() . '::IsBusiness']) && is_bool($aArgs[self::GetName() . '::IsBusiness'])) {
-                    $aAttributesToSave = [];
-
                     $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', $aArgs[self::GetName() . '::IsBusiness']);
-                    $aAttributesToSave[] = self::GetName() . '::IsBusiness';
 
                     if ($oTenant->{self::GetName() . '::IsBusiness'}) {
                         $oFilesModule = \Aurora\Api::GetModule('Files');
@@ -301,27 +300,21 @@ class Module extends \Aurora\System\Module\AbstractModule
                         if ($oFilesModule) {
                             $oTenant->setExtendedProp('Files::UserSpaceLimitMb', $oFilesModule->oModuleSettings->UserSpaceLimitMb);
                             $oTenant->setExtendedProp('Files::TenantSpaceLimitMb', $iFilesStorageQuotaMb);
-
-                            $aAttributesToSave[] = 'Files::UserSpaceLimitMb';
-                            $aAttributesToSave[] = 'Files::TenantSpaceLimitMb';
                         }
 
                         $iMailStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('MailStorageQuotaMb');
                         if (is_int($iMailStorageQuotaMb)) {
                             $oTenant->setExtendedProp('Mail::TenantSpaceLimitMb', $iMailStorageQuotaMb);
-                            $aAttributesToSave[] = 'Mail::TenantSpaceLimitMb';
                         }
                     } else {
                         $oTenant->setExtendedProp('Mail::AllowChangeUserSpaceLimit', false);
-                        $aAttributesToSave[] = 'Mail::AllowChangeUserSpaceLimit';
                     }
 
                     $oTenant->save();
                 }
 
-                if (isset($aArgs[self::GetName() . '::EnableGroupware']) && is_bool($aArgs[self::GetName() . '::EnableGroupware'])) {
-                    $this->UpdateGroupwareState($iTenantId, $aArgs[self::GetName() . '::EnableGroupware']);
-                }
+                $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) && is_bool($aArgs[self::GetName() . '::EnableGroupware']);
+                $this->UpdateGroupwareState($iTenantId, $bEnableGroupware);
             }
         }
     }
@@ -334,9 +327,8 @@ class Module extends \Aurora\System\Module\AbstractModule
             if (!empty($iTenantId)) {
                 $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($iTenantId);
                 if ($oTenant) {
-                    if (isset($aArgs[self::GetName() . '::EnableGroupware']) && is_bool($aArgs[self::GetName() . '::EnableGroupware'])) {
-                        $this->UpdateGroupwareState($iTenantId, $aArgs[self::GetName() . '::EnableGroupware']);
-                    }
+                    $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) && is_bool($aArgs[self::GetName() . '::EnableGroupware']);
+                    $this->UpdateGroupwareState($iTenantId, $bEnableGroupware);
                 }
             }
         }
@@ -403,6 +395,44 @@ class Module extends \Aurora\System\Module\AbstractModule
             if (is_int($FilesStorageQuotaMb)) {
                 \Aurora\Modules\Files\Module::Decorator()->UpdateSettingsForEntity('Tenant', $TenantId, null, $FilesStorageQuotaMb);
             }
+            return true;
+        }
+
+        return false;
+    }
+
+        /**
+     * Sets limits for business tenant
+     * 
+     * @param int $TenantId
+     * @param int $AliasesCount
+     * @param int $EmailAccountsCount
+     * @param int $MailStorageQuotaMb
+     * @param int $FilesStorageQuotaMb
+     * 
+     * @return boolean
+     */
+    public function UpdateBusinessTenantUserSlot($TenantId, $UserSlots)
+    {
+        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+
+        $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($TenantId);
+        if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
+            $oTenant->setExtendedProp(self::GetName() . '::UserSlots', $UserSlots);
+            $oTenant->save();
+
+            $ActiveUserCount = User::where('IdTenant', $TenantId)->where('IsDisabled', false)->count();
+
+            if ($ActiveUserCount - 1 >= $UserSlots) {
+                $OwerflowUsersClots = $ActiveUserCount - 1 - $UserSlots;
+                User::where('IdTenant', $TenantId)
+                    ->where('IsDisabled', false)
+                    ->where('Role', '<>', UserRole::TenantAdmin)
+                    ->orderBy('Id', 'desc')
+                    ->limit($OwerflowUsersClots)
+                    ->update(['IsDisabled' => true]);
+            }
+
             return true;
         }
 
