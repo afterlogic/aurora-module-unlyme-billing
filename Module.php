@@ -157,6 +157,7 @@ class Module extends \Aurora\System\Module\AbstractModule
             if ($oTenant instanceof Tenant) {
                 if ($EnableGroupware) {
                     $oTenant->clearDisabledModules();
+                    $bResult = true;
                 } else {
                     $aGroupwareModules = $this->oModuleSettings->GroupwareModules;
                     if (is_array($aGroupwareModules) && count($aGroupwareModules) > 0) {
@@ -291,6 +292,8 @@ class Module extends \Aurora\System\Module\AbstractModule
         if (!empty($iTenantId)) {
             $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($iTenantId);
             if ($oTenant) {
+                // TODO: IsBusiness has never been set on tenant creation via admin panel.
+                // But the property can be passed as an extra parameted via Web API.
                 if (isset($aArgs[self::GetName() . '::IsBusiness']) && is_bool($aArgs[self::GetName() . '::IsBusiness'])) {
                     $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', $aArgs[self::GetName() . '::IsBusiness']);
 
@@ -313,7 +316,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                     $oTenant->save();
                 }
 
-                $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) && is_bool($aArgs[self::GetName() . '::EnableGroupware']);
+                $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) ? (bool) $aArgs[self::GetName() . '::EnableGroupware'] : false;
                 $this->UpdateGroupwareState($iTenantId, $bEnableGroupware);
             }
         }
@@ -328,7 +331,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($iTenantId);
                 if ($oTenant) {
                     $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) && is_bool($aArgs[self::GetName() . '::EnableGroupware']);
-                    $this->UpdateGroupwareState($iTenantId, $bEnableGroupware);
+                    self::Decorator()->UpdateGroupwareState($iTenantId, $bEnableGroupware);
                 }
             }
         }
@@ -487,6 +490,10 @@ class Module extends \Aurora\System\Module\AbstractModule
             $oTenant->{self::GetName() . '::IsBusiness'} = (bool) $IsBusiness;
             $oTenant->{self::GetName() . '::IsGroupwareEnabled'} = (bool) $IsGroupwareEnabled;
             $bResult = $oTenant->save();
+
+            if ($bResult) {
+                $bResult = self::Decorator()->UpdateGroupwareState($oTenant->Id, (bool) $IsGroupwareEnabled);
+            }
         }
 
         return $bResult;
