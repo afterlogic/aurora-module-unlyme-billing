@@ -17,10 +17,6 @@ export default {
     ]
   },
 
-  getTenantOtherDataComponents () {
-    return import('./components/EditTenant')
-  },
-
   getAdminTenantTabs () {
     return [
       {
