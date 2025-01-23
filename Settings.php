@@ -74,6 +74,18 @@ class Settings extends \Aurora\System\Module\Settings
                 null,
                 "List of reserved usernames that cannot be used for new accounts",
             ),
+            "StripeSecretKey" => new SettingsProperty(
+                "",
+                "string",
+                null,
+                "Stripe secret key",
+            ),
+            "StripeWebhookUrl" => new SettingsProperty(
+                "",
+                "string",
+                null,
+                "Stripe webhook url",
+            ),
         ];
     }
 }

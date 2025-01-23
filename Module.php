@@ -10,6 +10,7 @@ namespace Aurora\Modules\BillingUnlyme;
 use Aurora\Modules\Core\Models\User;
 use Aurora\Modules\Core\Models\Tenant;
 use Aurora\System\Enums\UserRole;
+use Stripe\StripeClient;
 
 /**
  * Provides user groups.
@@ -66,6 +67,8 @@ class Module extends \Aurora\System\Module\AbstractModule
                 ];
             }
         }
+
+        $this->initStripe();
     }
 
     /**
@@ -90,6 +93,43 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function getModuleSettings()
     {
         return $this->oModuleSettings;
+    }
+
+    protected function initStripe()
+    {
+        $webhook_exists = false;
+        $webhookUrl = $this->getConfig('StripeWebhookUrl', '');
+        $secretKey = $this->getConfig('StripeSecretKey', '');
+
+        if (!empty($webhookUrl) && !empty($secretKey)) {
+            \Stripe\Stripe::setApiKey($secretKey);
+            $webhooks = \Stripe\WebhookEndpoint::all();
+            foreach ($webhooks->data as $webhook) {
+                if ($webhook->url === $webhookUrl) {
+                    $webhook_exists = true;
+                    break;
+                }
+            }
+
+            if (!$webhook_exists) {
+                try {
+                    $newNebhook = \Stripe\WebhookEndpoint::create([
+                        'url' => $webhookUrl,
+                        'enabled_events' => [
+                            'checkout.session.completed',
+                            'payment_intent.succeeded',
+                            'invoice.payment_failed',
+                        ],
+                    ]);
+                } catch (\Stripe\Exception\ApiErrorException $e) {
+                    // TODO:
+                }
+            } else {
+                // TODO:
+            }
+        } else {
+            // TODO:
+        }
     }
 
     private function checkIfEmailReserved($sEmail)
@@ -426,7 +466,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             $ActiveUserCount = User::where('IdTenant', $TenantId)->where('IsDisabled', false)->count();
 
-            if ($ActiveUserCount - 1 >= $UserSlots) {
+            if ($ActiveUserCount - 1 > $UserSlots) {
                 $OwerflowUsersClots = $ActiveUserCount - 1 - $UserSlots;
                 User::where('IdTenant', $TenantId)
                     ->where('IsDisabled', false)
@@ -457,16 +497,43 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         $oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
         $TenantId = $TenantId ?? $oAuthenticatedUser->IdTenant;
+        $paymentLink = '';
 
         $oTenant = \Aurora\System\Api::getTenantById($TenantId);
         if ($oTenant && ($oAuthenticatedUser->isAdmin() || $oAuthenticatedUser->IdTenant === $oTenant->Id)) {
             $bIsBusiness = (bool) $oTenant->{self::GetName() . '::IsBusiness'};
             $sIsGroupwareEnabled = (bool) $oTenant->{self::GetName() . '::IsGroupwareEnabled'};
+
+            $paymentLink = $oTenant->getExtendedProp(self::GetName() . '::PaymentLink', '');
+            $secretKey = $this->getConfig('StripeSecretKey', '');
+            if (empty($paymentLink) && !empty($secretKey)) {
+                $paymentLinkObj = \Stripe\PaymentLink::create([
+                    'line_items' => [
+                        [
+                            'price' => 'price_1Qjdkp09U6GZZ1FrqVETEJCN',
+                            'quantity' => 10,
+                            'adjustable_quantity' => [
+                                'enabled' => true,
+                                'minimum' => 0,
+                                'maximum' => 999
+                            ]
+                        ]
+                    ],
+                    'metadata' => [
+                        'TenantId' => $oTenant->Id
+                    ]
+                ]);
+    
+                $paymentLink = $paymentLinkObj->url;
+                $oTenant->setExtendedProp(self::GetName() . '::PaymentLink', $paymentLink);
+                $oTenant->save();
+            }
         }
 
         return array(
             'IsBusiness' => $bIsBusiness,
             'IsGroupwareEnabled' => $sIsGroupwareEnabled,
+            'PaymentLink' => $paymentLink
         );
     }
 
