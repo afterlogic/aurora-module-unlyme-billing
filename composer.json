@@ -4,7 +4,8 @@
 	"require": {
 		"php": ">=7.4.0",
 		"afterlogic/aurora-framework": "~0.10.0",
-		"afterlogic/aurora-module-webclient-adminpanel": "~0.10.0"
+		"afterlogic/aurora-module-webclient-adminpanel": "~0.10.0",
+		"stripe/stripe-php": "^16.4"
 	},
 	"autoload": {
 		"classmap": ["/"]
