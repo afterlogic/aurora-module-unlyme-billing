@@ -19,6 +19,7 @@ try {
         json_decode($payload, true)
     );
 } catch(\Exception $e) {
+    \Aurora\System\Api::LogException($e, LogLevel::Full, 'stripe-webhook-');
     http_response_code(400);
     exit();
 }
