@@ -35,7 +35,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Core::CreateUser::before', array($this, 'onBeforeCreateUser'));
         $this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
         $this->subscribeEvent('Core::CreateTenant::after', array($this, 'onAfterCreateTenant'));
-        $this->subscribeEvent('Core::UpdateTenant::after', array($this, 'onAfterUpdateTenant'));
 
         // check if mailbox is allowed for creation
         $this->subscribeEvent('Mail::CreateAccount::before', array($this, 'onBeforeCreateAccount'));
@@ -362,20 +361,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
     }
 
-    public function onAfterUpdateTenant($aArgs, &$mResult)
-    {
-        $oUser = \Aurora\Api::getAuthenticatedUser();
-        if ($oUser instanceof  User && $oUser->Role === UserRole::SuperAdmin) {
-            $iTenantId = (int) $aArgs['TenantId'];
-            if (!empty($iTenantId)) {
-                $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($iTenantId);
-                if ($oTenant) {
-                    $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) && is_bool($aArgs[self::GetName() . '::EnableGroupware']);
-                    self::Decorator()->UpdateGroupwareState($iTenantId, $bEnableGroupware);
-                }
-            }
-        }
-    }
 
     public function onAfterGetSettingsForEntity($aArgs, &$mResult)
     {
