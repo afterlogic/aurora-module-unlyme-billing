@@ -18,10 +18,14 @@
               </q-item-label>
             </div>
           </div>
-          <div class="row">
+          <div class="row q-mb-md">
             <div class="col-8">
               <q-checkbox dense v-model="isGroupwareEnabled" :label="$t('BILLINGUNLYME.LABEL_ENABLE_GROUPWARE')" />
             </div>
+          </div>
+          <div class="row" v-if="isBusiness > 0">
+            <div class="col-2" v-t="'BILLINGUNLYME.LABEL_USER_SLOTS'"></div>
+            <div class="col-5"><b>{{ iUserSlots }}</b></div>
           </div>
         </q-card-section>
       </q-card>
@@ -55,6 +59,7 @@ export default {
 
       isBusiness: false,
       isGroupwareEnabled: false,
+      iUserSlots: 0,
     }
   },
 
@@ -110,12 +115,12 @@ export default {
     populate () {
       const tenant = this.$store.getters['tenants/getTenant'](this.tenantId)
 
-      console.log('tenant', this.tenant?.name, !!this.tenant, tenant.completeData[`${serverModuleName}::IsBusiness`], tenant.completeData[`${serverModuleName}::IsGroupwareEnabled`]);
       if (tenant) {
         if (tenant.completeData[`${serverModuleName}::IsBusiness`] !== undefined) {
           this.tenant = tenant
           this.isBusiness = tenant.completeData[`${serverModuleName}::IsBusiness`]
           this.isGroupwareEnabled = tenant.completeData[`${serverModuleName}::IsGroupwareEnabled`]
+          this.iUserSlots = tenant.completeData[`${serverModuleName}::UserSlots`]
         } else {
           this.getSettings()
         }
@@ -168,6 +173,7 @@ export default {
           const data = {}
           data[`${serverModuleName}::IsBusiness`] = types.pBool(result.IsBusiness)
           data[`${serverModuleName}::IsGroupwareEnabled`] = types.pBool(result.IsGroupwareEnabled)
+          data[`${serverModuleName}::UserSlots`] = types.pInt(result.UserSlots)
           
           this.$store.commit('tenants/setTenantCompleteData', { id: this.tenantId, data })
         }

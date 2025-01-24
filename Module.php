@@ -479,6 +479,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         $bIsBusiness = false;
         $sIsGroupwareEnabled = false;
+        $iUserSlots = 0;
 
         $oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
         $TenantId = $TenantId ?? $oAuthenticatedUser->IdTenant;
@@ -488,6 +489,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         if ($oTenant && ($oAuthenticatedUser->isAdmin() || $oAuthenticatedUser->IdTenant === $oTenant->Id)) {
             $bIsBusiness = (bool) $oTenant->{self::GetName() . '::IsBusiness'};
             $sIsGroupwareEnabled = (bool) $oTenant->{self::GetName() . '::IsGroupwareEnabled'};
+            $iUserSlots = (int) $oTenant->{self::GetName() . '::UserSlots'};
 
             $paymentLink = $oTenant->getExtendedProp(self::GetName() . '::PaymentLink', '');
             $secretKey = $this->getConfig('StripeSecretKey', '');
@@ -518,6 +520,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         return array(
             'IsBusiness' => $bIsBusiness,
             'IsGroupwareEnabled' => $sIsGroupwareEnabled,
+            'UserSlots' => $iUserSlots,
             'PaymentLink' => $paymentLink
         );
     }
