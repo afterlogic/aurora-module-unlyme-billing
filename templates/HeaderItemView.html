@@ -1,5 +1,8 @@
 <!-- ko if: sLink !== '' -->
-<a href="#" target="_blank" class="item banner" data-bind="attr: {'href': sLink}">
-	<span class="link" data-bind="i18n: {'key': '%MODULENAME%/UPRGADE_NOW'}"></span>
+<a href="#" target="_blank" class="item upsale-link" data-bind="attr: {'href': sLink}">
+	<span class="link">
+		<span class="icon"></span>
+		<span class="text" data-bind="i18n: {'key': '%MODULENAME%/UPRGADE_NOW'}"></span>
+	</span>
 </a>
 <!-- /ko -->
