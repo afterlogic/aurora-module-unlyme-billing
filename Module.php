@@ -267,8 +267,6 @@ class Module extends \Aurora\System\Module\AbstractModule
     }
 
     /**
-     * TODO: check user groups case
-     * 
      * @param array $aArgs
      * @param mixed $mResult
      */
@@ -286,12 +284,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 
                         $oUser->setExtendedProp('Files::UserSpaceLimitMb', $UserSpaceLimitMb);
                         $oUser->save();
-                    // } else {
-                    //     $oFilesDecorator = \Aurora\Modules\Files\Module::Decorator();
-                    //     $iFilesQuotaMb = $this->getGroupSetting($oUser->Id, 'FilesQuotaMb');
-                    //     if ($oFilesDecorator && is_int($iFilesQuotaMb)) {
-                    //         $oFilesDecorator->UpdateUserSpaceLimit($oUser->Id, $iFilesQuotaMb);
-                    //     }
                     }
                 }
             }
@@ -312,10 +304,6 @@ class Module extends \Aurora\System\Module\AbstractModule
             if ($oUser instanceof User) {
                 $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($oUser->IdTenant);
                 if ($oTenant instanceof Tenant && $oUser->PublicId === $oAccount->Email) {
-                    // $iMailQuotaMb = $oTenant->{self::GetName() . '::IsBusiness'}
-                    //     ? $oTenant->{'Mail::UserSpaceLimitMb'}
-                    //     : $this->getGroupSetting($oUser->Id, 'MailQuotaMb');
-                    // \Aurora\Modules\Mail\Module::Decorator()->UpdateEntitySpaceLimits('User', $oUser->Id, $oUser->IdTenant, null, $iMailQuotaMb);
                     if ($oTenant->{self::GetName() . '::IsBusiness'}) {
                         $iMailQuotaMb = $oTenant->{'Mail::UserSpaceLimitMb'};
                         \Aurora\Modules\Mail\Module::Decorator()->UpdateEntitySpaceLimits('User', $oUser->Id, $oUser->IdTenant, null, $iMailQuotaMb);
