@@ -261,8 +261,6 @@ class Module extends \Aurora\System\Module\AbstractModule
             } else {
                 throw new \Exception($this->i18N('ERROR_EMAIL_IS_RESERVED'));
             }
-        } else {
-            throw new \Exception($this->i18N('ERROR_EMAIL_IS_RESERVED'));
         }
     }
 
