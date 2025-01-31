@@ -2,12 +2,12 @@
   <q-scroll-area class="full-height full-width">
     <div class="q-pa-lg">
       <div class="row q-mb-md">
-        <div class="col text-h5" v-t="'BILLINGUNLYME.HEADING_SETTINGS_TAB'"></div>
+        <div class="col text-h5" v-t="'UNLYMEBILLING.HEADING_SETTINGS_TAB'"></div>
       </div>
       <q-card flat bordered class="card-edit-settings">
         <q-card-section>
           <div class="row q-mb-md">
-            <div class="col-2 q-mt-sm" v-t="'BILLINGUNLYME.LABEL_ADD_RESERVED_NAME'"></div>
+            <div class="col-2 q-mt-sm" v-t="'UNLYMEBILLING.LABEL_ADD_RESERVED_NAME'"></div>
             <div class="col-3">
               <q-input outlined dense bg-color="white" v-model="accountName" />
             </div>
@@ -20,7 +20,7 @@
                 class="q-ml-md q-px-sm"
                 :ripple="false"
                 color="primary"
-                :label="$t('BILLINGUNLYME.ACTION_ADD_NEW_RESERVED_NAME')"
+                :label="$t('UNLYMEBILLING.ACTION_ADD_NEW_RESERVED_NAME')"
                 @click="save"
               />
             </div>
@@ -42,7 +42,7 @@
                   class="q-ml-md q-px-sm"
                   :ripple="false"
                   color="primary"
-                  :label="$t('BILLINGUNLYME.ACTION_DELETE_RESERVED_NAMES')"
+                  :label="$t('UNLYMEBILLING.ACTION_DELETE_RESERVED_NAMES')"
                   @click="deleteReservedList"
                 />
               </div>
@@ -114,7 +114,7 @@ export default {
           }
           webApi
             .sendRequest({
-              moduleName: 'BILLINGUNLYME',
+              moduleName: 'UNLYMEBILLING',
               methodName: 'AddNewReservedName',
               parameters,
             })
@@ -137,7 +137,7 @@ export default {
               }
             )
         } else {
-          notification.showError(this.$t('BILLINGUNLYME.ERROR_EMPTY_RESERVED_NAME'))
+          notification.showError(this.$t('UNLYMEBILLING.ERROR_EMPTY_RESERVED_NAME'))
         }
       }
     },
@@ -150,7 +150,7 @@ export default {
           }
           webApi
             .sendRequest({
-              moduleName: 'BILLINGUNLYME',
+              moduleName: 'UNLYMEBILLING',
               methodName: 'DeleteReservedNames',
               parameters,
             })
@@ -168,7 +168,7 @@ export default {
             )
         } else {
           this.deleting = false
-          notification.showError(this.$t('BILLINGUNLYME.ERROR_EMPTY_RESERVED_NAMES'))
+          notification.showError(this.$t('UNLYMEBILLING.ERROR_EMPTY_RESERVED_NAMES'))
         }
       }
     },
@@ -176,7 +176,7 @@ export default {
       this.loading = true
       webApi
         .sendRequest({
-          moduleName: 'BILLINGUNLYME',
+          moduleName: 'UNLYMEBILLING',
           methodName: 'GetReservedNames',
           Parameters: {},
         })

@@ -6,7 +6,7 @@ require_once \dirname(__file__) . "/../../system/autoload.php";
 
 \Aurora\System\Api::Init();
 
-$module = \Aurora\modules\BillingUnlyme\Module::getInstance();
+$module = \Aurora\modules\UnlymeBilling\Module::getInstance();
 $secretKey = $module->getConfig('StripeSecretKey', '');
 
 \Stripe\Stripe::setApiKey($secretKey);

@@ -5,7 +5,7 @@
  * For full statements of the licenses see LICENSE-AFTERLOGIC and LICENSE-AGPL3 files.
  */
 
-namespace Aurora\Modules\BillingUnlyme;
+namespace Aurora\Modules\UnlymeBilling;
 
 use Aurora\Modules\Core\Models\User;
 use Aurora\Modules\Core\Models\Tenant;

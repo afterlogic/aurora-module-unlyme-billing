@@ -1,7 +1,7 @@
 import AdminSettingsPerTenant from './components/AdminSettingsPerTenant'
 
 export default {
-  moduleName: 'BillingUnlyme',
+  moduleName: 'UnlymeBilling',
 
   requiredModules: [],
 
@@ -9,7 +9,7 @@ export default {
     return [
       {
         tabName: 'reserved-list',
-        tabTitle: 'BILLINGUNLYME.ADMIN_SETTINGS_RESERVED_LIST_TAB_LABEL',
+        tabTitle: 'UNLYMEBILLING.ADMIN_SETTINGS_RESERVED_LIST_TAB_LABEL',
         tabRouteChildren: [
           { path: 'reserved-list', component: () => import('./components/ReservedListAdminSettings') },
         ],
@@ -21,7 +21,7 @@ export default {
     return [
       {
         tabName: 'billing-unlyme',
-        tabTitle: 'BILLINGUNLYME.ADMIN_SETTINGS_TAB_LABEL',
+        tabTitle: 'UNLYMEBILLING.ADMIN_SETTINGS_TAB_LABEL',
         tabRouteChildren: [
           { path: 'id/:id/billing-unlyme', component: AdminSettingsPerTenant },
           { path: 'search/:search/id/:id/billing-unlyme', component: AdminSettingsPerTenant },
