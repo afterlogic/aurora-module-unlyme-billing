@@ -317,32 +317,35 @@ class Module extends \Aurora\System\Module\AbstractModule
         if (!empty($iTenantId)) {
             $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($iTenantId);
             if ($oTenant) {
-                // TODO: IsBusiness has never been set on tenant creation via admin panel.
-                // But the property can be passed as an extra parameted via Web API.
-                if (isset($aArgs[self::GetName() . '::IsBusiness']) && is_bool($aArgs[self::GetName() . '::IsBusiness'])) {
-                    $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', $aArgs[self::GetName() . '::IsBusiness']);
+                if (isset($aArgs['UnlymeBusiness']) && is_bool($aArgs['UnlymeBusiness'])) {
+                    $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', true);
+                    $oTenant->setExtendedProp(self::GetName() . '::IsGroupwareEnabled', true);
 
-                    if ($oTenant->{self::GetName() . '::IsBusiness'}) {
-                        $oFilesModule = \Aurora\Api::GetModule('Files');
-                        $iFilesStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('FilesStorageQuotaMb');
-                        if ($oFilesModule) {
-                            $oTenant->setExtendedProp('Files::UserSpaceLimitMb', $oFilesModule->oModuleSettings->UserSpaceLimitMb);
-                            $oTenant->setExtendedProp('Files::TenantSpaceLimitMb', $iFilesStorageQuotaMb);
-                        }
+                    // if ($oTenant->{self::GetName() . '::IsBusiness'}) {
+                    //     $oFilesModule = \Aurora\Api::GetModule('Files');
+                    //     $iFilesStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('FilesStorageQuotaMb');
+                    //     if ($oFilesModule) {
+                    //         $oTenant->setExtendedProp('Files::UserSpaceLimitMb', $oFilesModule->oModuleSettings->UserSpaceLimitMb);
+                    //         $oTenant->setExtendedProp('Files::TenantSpaceLimitMb', $iFilesStorageQuotaMb);
+                    //     }
 
-                        $iMailStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('MailStorageQuotaMb');
-                        if (is_int($iMailStorageQuotaMb)) {
-                            $oTenant->setExtendedProp('Mail::TenantSpaceLimitMb', $iMailStorageQuotaMb);
-                        }
-                    } else {
-                        $oTenant->setExtendedProp('Mail::AllowChangeUserSpaceLimit', false);
-                    }
+                    //     $iMailStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('MailStorageQuotaMb');
+                    //     if (is_int($iMailStorageQuotaMb)) {
+                    //         $oTenant->setExtendedProp('Mail::TenantSpaceLimitMb', $iMailStorageQuotaMb);
+                    //     }
+                    // } else {
+                    //     $oTenant->setExtendedProp('Mail::AllowChangeUserSpaceLimit', false);
+                    // }
 
                     $oTenant->save();
-                }
+                    $this->UpdateGroupwareState($iTenantId, true);
+                } else {
+                    // $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', false);
+                    $oTenant->setExtendedProp(self::GetName() . '::IsGroupwareEnabled', false);
+                    $oTenant->save();
 
-                $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) ? (bool) $aArgs[self::GetName() . '::EnableGroupware'] : false;
-                $this->UpdateGroupwareState($iTenantId, $bEnableGroupware);
+                    $this->UpdateGroupwareState($iTenantId, false);
+                }
             }
         }
     }
