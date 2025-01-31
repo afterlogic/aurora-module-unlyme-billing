@@ -168,7 +168,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $bState = false;
         $oAuthenticatedUser = \Aurora\Api::getAuthenticatedUser();
         if ($oAuthenticatedUser instanceof User && ($oAuthenticatedUser->Role === UserRole::SuperAdmin || ($oAuthenticatedUser->Role === UserRole::TenantAdmin && $oAuthenticatedUser->IdTenant === $TenantId))) {
-            $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($TenantId);
+            $oTenant = \Aurora\Api::getTenantById($TenantId);
             if ($oTenant instanceof Tenant) {
                 $aDisabledModules = $oTenant->getDisabledModules();
                 if (count($aDisabledModules) === 0) {
@@ -192,7 +192,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $bResult = false;
         $oAuthenticatedUser = \Aurora\Api::getAuthenticatedUser();
         if ($oAuthenticatedUser->Role === UserRole::SuperAdmin || ($oAuthenticatedUser->Role === UserRole::TenantAdmin && $oAuthenticatedUser->IdTenant === $TenantId)) {
-            $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($TenantId);
+            $oTenant = \Aurora\Api::getTenantById($TenantId);
             if ($oTenant instanceof Tenant) {
                 if ($EnableGroupware) {
                     $oTenant->clearDisabledModules();
@@ -271,9 +271,9 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterCreateUser($aArgs, &$mResult)
     {
         if ($mResult) {
-            $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserWithoutRoleCheck($mResult);
+            $oUser = \Aurora\Api::getUserById($mResult);
             if ($oUser instanceof User) {
-                $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($oUser->IdTenant);
+                $oTenant = \Aurora\Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant) {
                     if ($oTenant->{self::GetName() . '::IsBusiness'}) {
                         $UserSpaceLimitMb = $oTenant->{'Files::UserSpaceLimitMb'};
@@ -298,9 +298,9 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         if ($mResult instanceof \Aurora\Modules\Mail\Models\MailAccount) {
             $oAccount = $mResult;
-            $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserWithoutRoleCheck($oAccount->IdUser);
+            $oUser = \Aurora\Api::getUserById($oAccount->IdUser);
             if ($oUser instanceof User) {
-                $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($oUser->IdTenant);
+                $oTenant = \Aurora\Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant && $oUser->PublicId === $oAccount->Email) {
                     if ($oTenant->{self::GetName() . '::IsBusiness'}) {
                         $iMailQuotaMb = $oTenant->{'Mail::UserSpaceLimitMb'};
@@ -315,7 +315,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $iTenantId = $mResult;
         if (!empty($iTenantId)) {
-            $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($iTenantId);
+            $oTenant = \Aurora\Api::getTenantById($iTenantId);
             if ($oTenant) {
                 // TODO: IsBusiness has never been set on tenant creation via admin panel.
                 // But the property can be passed as an extra parameted via Web API.
@@ -351,15 +351,15 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterGetSettingsForEntity($aArgs, &$mResult)
     {
         if (isset($aArgs['EntityType'], $aArgs['EntityId']) && 	$aArgs['EntityType'] === 'Tenant') {
-            $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($aArgs['EntityId']);
+            $oTenant = \Aurora\Api::getTenantById($aArgs['EntityId']);
             if ($oTenant instanceof Tenant) {
                 $mResult['AllowEditUserSpaceLimitMb'] = $oTenant->{self::GetName() . '::IsBusiness'};
             }
         }
         if (isset($aArgs['EntityType'], $aArgs['EntityId']) && 	$aArgs['EntityType'] === 'User') {
-            $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserWithoutRoleCheck($aArgs['EntityId']);
+            $oUser = \Aurora\Api::getUserById($aArgs['EntityId']);
             if ($oUser instanceof User) {
-                $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($oUser->IdTenant);
+                $oTenant = \Aurora\Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant) {
                     $mResult['AllowEditUserSpaceLimitMb'] = $oTenant->{self::GetName() . '::IsBusiness'};
                 }
@@ -389,7 +389,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
-        $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($TenantId);
+        $oTenant = \Aurora\Api::getTenantById($TenantId);
         if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
             $aAttributesToSave = [];
             if (is_int($AliasesCount)) {
@@ -430,7 +430,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
-        $oTenant = \Aurora\Modules\Core\Module::Decorator()->GetTenantWithoutRoleCheck($TenantId);
+        $oTenant = \Aurora\Api::getTenantById($TenantId);
         if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
             $oTenant->setExtendedProp(self::GetName() . '::UserSlots', $UserSlots);
             $oTenant->save();
