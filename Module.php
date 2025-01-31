@@ -7,6 +7,7 @@
 
 namespace Aurora\Modules\UnlymeBilling;
 
+use Aurora\System\Api;
 use Aurora\Modules\Core\Models\User;
 use Aurora\Modules\Core\Models\Tenant;
 use Aurora\System\Enums\UserRole;
@@ -166,9 +167,9 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function GetGroupwareState($TenantId)
     {
         $bState = false;
-        $oAuthenticatedUser = \Aurora\Api::getAuthenticatedUser();
+        $oAuthenticatedUser = Api::getAuthenticatedUser();
         if ($oAuthenticatedUser instanceof User && ($oAuthenticatedUser->Role === UserRole::SuperAdmin || ($oAuthenticatedUser->Role === UserRole::TenantAdmin && $oAuthenticatedUser->IdTenant === $TenantId))) {
-            $oTenant = \Aurora\Api::getTenantById($TenantId);
+            $oTenant = Api::getTenantById($TenantId);
             if ($oTenant instanceof Tenant) {
                 $aDisabledModules = $oTenant->getDisabledModules();
                 if (count($aDisabledModules) === 0) {
@@ -189,20 +190,25 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function UpdateGroupwareState($TenantId, $EnableGroupware = false)
     {
+        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+
+        return $this->setGroupwareState($TenantId, $EnableGroupware);
+    }
+
+    protected function setGroupwareState($TenantId, $EnableGroupware)
+    {
         $bResult = false;
-        $oAuthenticatedUser = \Aurora\Api::getAuthenticatedUser();
-        if ($oAuthenticatedUser->Role === UserRole::SuperAdmin || ($oAuthenticatedUser->Role === UserRole::TenantAdmin && $oAuthenticatedUser->IdTenant === $TenantId)) {
-            $oTenant = \Aurora\Api::getTenantById($TenantId);
-            if ($oTenant instanceof Tenant) {
-                if ($EnableGroupware) {
-                    $oTenant->clearDisabledModules();
+
+        $oTenant = Api::getTenantById($TenantId);
+        if ($oTenant instanceof Tenant) {
+            if ($EnableGroupware) {
+                $oTenant->clearDisabledModules();
+                $bResult = true;
+            } else {
+                $aGroupwareModules = $this->oModuleSettings->GroupwareModules;
+                if (is_array($aGroupwareModules) && count($aGroupwareModules) > 0) {
+                    $oTenant->disableModules($aGroupwareModules);
                     $bResult = true;
-                } else {
-                    $aGroupwareModules = $this->oModuleSettings->GroupwareModules;
-                    if (is_array($aGroupwareModules) && count($aGroupwareModules) > 0) {
-                        $oTenant->disableModules($aGroupwareModules);
-                        $bResult = true;
-                    }
                 }
             }
         }
@@ -271,9 +277,9 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterCreateUser($aArgs, &$mResult)
     {
         if ($mResult) {
-            $oUser = \Aurora\Api::getUserById($mResult);
+            $oUser = Api::getUserById($mResult);
             if ($oUser instanceof User) {
-                $oTenant = \Aurora\Api::getTenantById($oUser->IdTenant);
+                $oTenant = Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant) {
                     if ($oTenant->{self::GetName() . '::IsBusiness'}) {
                         $UserSpaceLimitMb = $oTenant->{'Files::UserSpaceLimitMb'};
@@ -298,9 +304,9 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         if ($mResult instanceof \Aurora\Modules\Mail\Models\MailAccount) {
             $oAccount = $mResult;
-            $oUser = \Aurora\Api::getUserById($oAccount->IdUser);
+            $oUser = Api::getUserById($oAccount->IdUser);
             if ($oUser instanceof User) {
-                $oTenant = \Aurora\Api::getTenantById($oUser->IdTenant);
+                $oTenant = Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant && $oUser->PublicId === $oAccount->Email) {
                     if ($oTenant->{self::GetName() . '::IsBusiness'}) {
                         $iMailQuotaMb = $oTenant->{'Mail::UserSpaceLimitMb'};
@@ -315,34 +321,37 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $iTenantId = $mResult;
         if (!empty($iTenantId)) {
-            $oTenant = \Aurora\Api::getTenantById($iTenantId);
+            $oTenant = Api::getTenantById($iTenantId);
             if ($oTenant) {
-                // TODO: IsBusiness has never been set on tenant creation via admin panel.
-                // But the property can be passed as an extra parameted via Web API.
-                if (isset($aArgs[self::GetName() . '::IsBusiness']) && is_bool($aArgs[self::GetName() . '::IsBusiness'])) {
-                    $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', $aArgs[self::GetName() . '::IsBusiness']);
+                $bBusinessTenant = isset($aArgs['UnlymeBusiness']) && is_bool($aArgs['UnlymeBusiness']);
+                if ($bBusinessTenant) {
+                    $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', true);
+                    $oTenant->setExtendedProp(self::GetName() . '::IsGroupwareEnabled', true);
 
-                    if ($oTenant->{self::GetName() . '::IsBusiness'}) {
-                        $oFilesModule = \Aurora\Api::GetModule('Files');
-                        $iFilesStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('FilesStorageQuotaMb');
-                        if ($oFilesModule) {
-                            $oTenant->setExtendedProp('Files::UserSpaceLimitMb', $oFilesModule->oModuleSettings->UserSpaceLimitMb);
-                            $oTenant->setExtendedProp('Files::TenantSpaceLimitMb', $iFilesStorageQuotaMb);
-                        }
+                    // if ($oTenant->{self::GetName() . '::IsBusiness'}) {
+                    //     $oFilesModule = Api::GetModule('Files');
+                    //     $iFilesStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('FilesStorageQuotaMb');
+                    //     if ($oFilesModule) {
+                    //         $oTenant->setExtendedProp('Files::UserSpaceLimitMb', $oFilesModule->oModuleSettings->UserSpaceLimitMb);
+                    //         $oTenant->setExtendedProp('Files::TenantSpaceLimitMb', $iFilesStorageQuotaMb);
+                    //     }
 
-                        $iMailStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('MailStorageQuotaMb');
-                        if (is_int($iMailStorageQuotaMb)) {
-                            $oTenant->setExtendedProp('Mail::TenantSpaceLimitMb', $iMailStorageQuotaMb);
-                        }
-                    } else {
-                        $oTenant->setExtendedProp('Mail::AllowChangeUserSpaceLimit', false);
-                    }
+                    //     $iMailStorageQuotaMb = $this->getBusinessTenantLimitsFromConfig('MailStorageQuotaMb');
+                    //     if (is_int($iMailStorageQuotaMb)) {
+                    //         $oTenant->setExtendedProp('Mail::TenantSpaceLimitMb', $iMailStorageQuotaMb);
+                    //     }
+                    // } else {
+                    //     $oTenant->setExtendedProp('Mail::AllowChangeUserSpaceLimit', false);
+                    // }
 
-                    $oTenant->save();
+                } else {
+                    // $oTenant->setExtendedProp(self::GetName() . '::IsBusiness', false);
+                    $oTenant->setExtendedProp(self::GetName() . '::IsGroupwareEnabled', false);
                 }
 
-                $bEnableGroupware = isset($aArgs[self::GetName() . '::EnableGroupware']) ? (bool) $aArgs[self::GetName() . '::EnableGroupware'] : false;
-                $this->UpdateGroupwareState($iTenantId, $bEnableGroupware);
+                $oTenant->save();
+
+                $this->setGroupwareState($iTenantId, $bBusinessTenant);
             }
         }
     }
@@ -351,15 +360,15 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterGetSettingsForEntity($aArgs, &$mResult)
     {
         if (isset($aArgs['EntityType'], $aArgs['EntityId']) && 	$aArgs['EntityType'] === 'Tenant') {
-            $oTenant = \Aurora\Api::getTenantById($aArgs['EntityId']);
+            $oTenant = Api::getTenantById($aArgs['EntityId']);
             if ($oTenant instanceof Tenant) {
                 $mResult['AllowEditUserSpaceLimitMb'] = $oTenant->{self::GetName() . '::IsBusiness'};
             }
         }
         if (isset($aArgs['EntityType'], $aArgs['EntityId']) && 	$aArgs['EntityType'] === 'User') {
-            $oUser = \Aurora\Api::getUserById($aArgs['EntityId']);
+            $oUser = Api::getUserById($aArgs['EntityId']);
             if ($oUser instanceof User) {
-                $oTenant = \Aurora\Api::getTenantById($oUser->IdTenant);
+                $oTenant = Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant) {
                     $mResult['AllowEditUserSpaceLimitMb'] = $oTenant->{self::GetName() . '::IsBusiness'};
                 }
@@ -389,7 +398,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
-        $oTenant = \Aurora\Api::getTenantById($TenantId);
+        $oTenant = Api::getTenantById($TenantId);
         if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
             $aAttributesToSave = [];
             if (is_int($AliasesCount)) {
@@ -430,7 +439,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
-        $oTenant = \Aurora\Api::getTenantById($TenantId);
+        $oTenant = Api::getTenantById($TenantId);
         if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
             $oTenant->setExtendedProp(self::GetName() . '::UserSlots', $UserSlots);
             $oTenant->save();
