@@ -237,11 +237,10 @@ class Module extends \Aurora\System\Module\AbstractModule
         $oTenant = \Aurora\Modules\Core\Module::Decorator()->getTenantsManager()->getTenantById($iTenantId);
         if ($oTenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
             $UserSlots = $oTenant->getExtendedProp(self::GetName() . '::UserSlots', 0);
-            if ($UserSlots > 0) {
-                $ActiveUserCount = User::where('IdTenant', $iTenantId)->where('IsDisabled', false)->count();
-                if ($ActiveUserCount - 1 >= $UserSlots) { // +1 - include tenant admin user
-                    throw new \Exception($this->i18N('ERROR_BUSINESS_TENANT_EMAIL_ACCOUNTS_LIMIT_PLURAL', ['COUNT' => $UserSlots], $ActiveUserCount));
-                }
+
+            $ActiveUserCount = User::where('IdTenant', $iTenantId)->where('IsDisabled', false)->count();
+            if ($ActiveUserCount - 1 >= $UserSlots) { // +1 - include tenant admin user
+                throw new \Exception($this->i18N('ERROR_BUSINESS_TENANT_EMAIL_ACCOUNTS_LIMIT_PLURAL', ['COUNT' => $UserSlots], $ActiveUserCount));
             }
         }
 
