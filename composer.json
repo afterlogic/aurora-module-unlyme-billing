@@ -1,5 +1,5 @@
 {
-	"name": "afterlogic/aurora-module-billing-unlyme",
+	"name": "afterlogic/aurora-module-unlyme-billing",
 	"type": "aurora-module",
 	"require": {
 		"php": ">=7.4.0",
@@ -11,6 +11,6 @@
 		"classmap": ["/"]
 	},
 	"extra": {
-		"installer-name": "BillingUnlyme"
+		"installer-name": "UnlymeBilling"
 	}
 }

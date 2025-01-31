@@ -2,29 +2,29 @@
   <q-scroll-area class="full-height full-width">
     <div class="q-pa-lg ">
       <div class="row q-mb-md">
-        <div class="col text-h5" v-t="'BILLINGUNLYME.HEADING_SETTINGS_TAB'"></div>
+        <div class="col text-h5" v-t="'UNLYMEBILLING.HEADING_SETTINGS_TAB'"></div>
       </div>
       <q-card flat bordered class="card-edit-settings">
         <q-card-section>
           <div class="row q-mb-sm">
             <div class="col-8">
-              <q-checkbox dense v-model="isBusiness" :label="$t('BILLINGUNLYME.LABEL_ITS_BUSINESS_TENANT')" />
+              <q-checkbox dense v-model="isBusiness" :label="$t('UNLYMEBILLING.LABEL_ITS_BUSINESS_TENANT')" />
             </div>
           </div>
           <div class="row q-mb-md">
             <div class="col-8">
               <q-item-label caption>
-                {{ $t('BILLINGUNLYME.HINT_ITS_BUSINESS_TENANT_HTML') }}
+                {{ $t('UNLYMEBILLING.HINT_ITS_BUSINESS_TENANT_HTML') }}
               </q-item-label>
             </div>
           </div>
           <div class="row q-mb-md">
             <div class="col-8">
-              <q-checkbox dense v-model="isGroupwareEnabled" :label="$t('BILLINGUNLYME.LABEL_ENABLE_GROUPWARE')" />
+              <q-checkbox dense v-model="isGroupwareEnabled" :label="$t('UNLYMEBILLING.LABEL_ENABLE_GROUPWARE')" />
             </div>
           </div>
           <div class="row" v-if="isBusiness > 0">
-            <div class="col-2" v-t="'BILLINGUNLYME.LABEL_USER_SLOTS'"></div>
+            <div class="col-2" v-t="'UNLYMEBILLING.LABEL_USER_SLOTS'"></div>
             <div class="col-5"><b>{{ iUserSlots }}</b></div>
           </div>
         </q-card-section>
@@ -47,7 +47,7 @@ import notification from 'src/utils/notification'
 import types from 'src/utils/types'
 import webApi from 'src/utils/web-api'
 
-const serverModuleName = 'BillingUnlyme'
+const serverModuleName = 'UnlymeBilling'
 export default {
   name: 'UnlimeAdminSettingsPerTenant',
 
