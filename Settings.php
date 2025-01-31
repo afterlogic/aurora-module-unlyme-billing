@@ -59,6 +59,7 @@ class Settings extends \Aurora\System\Module\Settings
                 [
                     "CorporateCalendar",
                     "S3CorporateFilestorage",
+                    "CorporateFiles",
                     "SharedContacts",
                     "SharedFiles",
                     "TeamContacts",
