@@ -487,11 +487,12 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             $paymentLink = $oTenant->getExtendedProp(self::GetName() . '::PaymentLink', '');
             $secretKey = $this->getConfig('StripeSecretKey', '');
-            if (empty($paymentLink) && !empty($secretKey)) {
+            $priceId = $this->getConfig('StripePriceId', '');
+            if (empty($paymentLink) && !empty($secretKey) && !empty($priceId)) {
                 $paymentLinkObj = \Stripe\PaymentLink::create([
                     'line_items' => [
                         [
-                            'price' => 'price_1Qjdkp09U6GZZ1FrqVETEJCN',
+                            'price' => $priceId,
                             'quantity' => 10,
                             'adjustable_quantity' => [
                                 'enabled' => true,

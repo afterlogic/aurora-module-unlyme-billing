@@ -87,6 +87,12 @@ class Settings extends \Aurora\System\Module\Settings
                 null,
                 "Stripe webhook url",
             ),
+            "StripePriceId" => new SettingsProperty(
+                "",
+                "string",
+                null,
+                "Stripe PriceId",
+            ),
         ];
     }
 }
