@@ -489,26 +489,30 @@ class Module extends \Aurora\System\Module\AbstractModule
             $secretKey = $this->getConfig('StripeSecretKey', '');
             $priceId = $this->getConfig('StripePriceId', '');
             if (empty($paymentLink) && !empty($secretKey) && !empty($priceId)) {
-                $paymentLinkObj = \Stripe\PaymentLink::create([
-                    'line_items' => [
-                        [
-                            'price' => $priceId,
-                            'quantity' => 10,
-                            'adjustable_quantity' => [
-                                'enabled' => true,
-                                'minimum' => 0,
-                                'maximum' => 999
+                try {
+
+                    $paymentLinkObj = \Stripe\PaymentLink::create([
+                        'line_items' => [
+                            [
+                                'price' => $priceId,
+                                'quantity' => 10,
+                                'adjustable_quantity' => [
+                                    'enabled' => true,
+                                    'minimum' => 0,
+                                    'maximum' => 999
+                                ]
                             ]
+                        ],
+                        'metadata' => [
+                            'TenantId' => $oTenant->Id
                         ]
-                    ],
-                    'metadata' => [
-                        'TenantId' => $oTenant->Id
-                    ]
-                ]);
-    
-                $paymentLink = $paymentLinkObj->url;
-                $oTenant->setExtendedProp(self::GetName() . '::PaymentLink', $paymentLink);
-                $oTenant->save();
+                    ]);
+        
+                    $paymentLink = $paymentLinkObj->url;
+                    $oTenant->setExtendedProp(self::GetName() . '::PaymentLink', $paymentLink);
+                    $oTenant->save();
+                } catch (\Exception $e) {
+                }
             }
         }
 
