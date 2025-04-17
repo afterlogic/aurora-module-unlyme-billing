@@ -51,7 +51,7 @@ if ($event && $event->type == 'checkout.session.completed') {
             \Aurora\System\Api::LogObject('No line items found in session object', LogLevel::Full, 'stripe-webhook-');
             http_response_code(400);
         }
-    }  else {
+    } else {
         \Aurora\System\Api::Log('TenantId not specified in metadata', LogLevel::Full, 'stripe-webhook-');
         http_response_code(400);
     }

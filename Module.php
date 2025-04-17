@@ -160,7 +160,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     /**
      * Check is tenant is a business tenant
-     * 
+     *
      * @param int $TenantId
      * @return bool
      */
@@ -183,7 +183,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     /**
      * Update groupware state for tenant
-     * 
+     *
      * @param int $TenantId
      * @param bool $EnableGroupware
      * @return bool
@@ -295,7 +295,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     /**
      * TODO: check user groups case
-     * 
+     *
      * @param array $aArgs
      * @param mixed $mResult
      */
@@ -384,13 +384,13 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     /**
      * Sets limits for business tenant
-     * 
+     *
      * @param int $TenantId
      * @param int $AliasesCount
      * @param int $EmailAccountsCount
      * @param int $MailStorageQuotaMb
      * @param int $FilesStorageQuotaMb
-     * 
+     *
      * @return boolean
      */
     public function UpdateBusinessTenantLimits($TenantId, $AliasesCount, $EmailAccountsCount, $MailStorageQuotaMb, $FilesStorageQuotaMb)
@@ -423,15 +423,15 @@ class Module extends \Aurora\System\Module\AbstractModule
         return false;
     }
 
-        /**
+    /**
      * Sets limits for business tenant
-     * 
+     *
      * @param int $TenantId
      * @param int $AliasesCount
      * @param int $EmailAccountsCount
      * @param int $MailStorageQuotaMb
      * @param int $FilesStorageQuotaMb
-     * 
+     *
      * @return boolean
      */
     public function UpdateBusinessTenantUserSlot($TenantId, $UserSlots)
@@ -507,7 +507,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                             'TenantId' => $oTenant->Id
                         ]
                     ]);
-        
+
                     $paymentLink = $paymentLinkObj->url;
                     $oTenant->setExtendedProp(self::GetName() . '::PaymentLink', $paymentLink);
                     $oTenant->save();
