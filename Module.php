@@ -427,16 +427,13 @@ class Module extends \Aurora\System\Module\AbstractModule
      * Sets limits for business tenant
      *
      * @param int $TenantId
-     * @param int $AliasesCount
-     * @param int $EmailAccountsCount
-     * @param int $MailStorageQuotaMb
-     * @param int $FilesStorageQuotaMb
+     * @param int $UserSlots
      *
      * @return boolean
      */
     public function UpdateBusinessTenantUserSlot($TenantId, $UserSlots)
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+        Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
         $oTenant = Api::getTenantById($TenantId);
         if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
@@ -520,7 +517,7 @@ class Module extends \Aurora\System\Module\AbstractModule
             'IsBusiness' => $bIsBusiness,
             'IsGroupwareEnabled' => $sIsGroupwareEnabled,
             'UserSlots' => $iUserSlots,
-            'PaymentLink' => $paymentLink
+            'PaymentLink' => !self::Decorator()->GetActiveSubscriptionId($TenantId) ? $paymentLink : ''
         );
     }
 
@@ -617,5 +614,135 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
 
         return $bResult;
+    }
+
+    protected function checkAccess($TenantId)
+    {
+        $oUser = Api::getAuthenticatedUser();
+        if ($oUser && (($oUser->Role === UserRole::TenantAdmin  && $oUser->IdTenant !== $TenantId) || $oUser->Role === UserRole::SuperAdmin)) {
+            throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
+        }
+    }
+
+    /**
+     * 
+     * @param mixed $TenantId
+     * @param mixed $SubscriptionId
+     * @return bool
+     */
+    public function SetSubscription($TenantId, $SubscriptionId)
+    {
+        $mResult = false;
+        $this->checkAccess($TenantId);
+
+        $oTenant = Api::getTenantById($TenantId);
+        if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
+            $subscriptions = $oTenant->getExtendedProp(self::GetName() . '::Subscriptions', []);
+            $subscriptions[] = $SubscriptionId;
+            $oTenant->setExtendedProp(self::GetName() . '::Subscriptions', $subscriptions);
+            $mResult = $oTenant->save();
+        }
+
+        return $mResult;
+    }
+
+    /**
+     * Summary of GetActiveSubscriptionId
+     * @param mixed $TenantId
+     */
+    public function GetActiveSubscriptionId($TenantId)
+    {
+        $activeSubscriptionId = false;
+        $this->checkAccess($TenantId);
+
+        $subscriptionsInfo = self::Decorator()->GetSubscriptionsInfo($TenantId);
+        foreach ($subscriptionsInfo as $id => $subInfo) {
+            if ($subInfo['Status'] === 'active') {
+                $activeSubscriptionId = $id;
+                break;
+            }
+        }
+
+        return $activeSubscriptionId;
+    }
+
+    /**
+     * Retrive current subscription info
+     *
+     * @return boolean|array
+     */    
+    public function GetSubscriptionsInfo($TenantId)
+    {
+        $this->checkAccess($TenantId);
+
+        $subscriptionsInfo = [];
+        $oTenant = Api::getTenantById($TenantId);
+        if ($oTenant) {
+            $subscriptions = $oTenant->getExtendedProp(self::GetName() . '::Subscriptions', []);
+            foreach ($subscriptions as $subscriptionId) {
+                if ($subscriptionId) {
+                    try {
+                        $subscription = \Stripe\Subscription::retrieve($subscriptionId);
+                        if($subscription) {
+
+                            $subscriptionInfo = [
+                                'Status' => $subscription->status,
+                                'Amount' => $subscription->plan->amount / 100,
+                                'Currency' => $subscription->plan->currency,
+                                'Interval' => $subscription->plan->interval,
+                                'NextPayment' => $subscription->current_period_end,
+                                'Invoices' => []
+                            ];
+            
+                            $invoices = \Stripe\Invoice::all(['subscription' => $subscription->id]);
+                            foreach ($invoices->data as $invoice) {
+                                $subscriptionInfo['Invoices'][$invoice->id] = [
+                                    'Description' => $invoice->lines->data[0]->description,
+                                    'AmountDue' => $invoice->amount_due / 100,
+                                    'Currency' => $invoice->currency,
+                                    'Status' => $invoice->status,
+                                    'Created' => $invoice->created
+                                ];
+                            }
+
+                            $subscriptionsInfo[$subscription->id] = $subscriptionInfo;
+                        }
+                    } catch (\Stripe\Exception\ApiErrorException $e) {
+                        Api::LogException($e);
+                        $subscriptionsInfo = false;
+                    }
+                }
+            }
+        }
+
+        return $subscriptionsInfo;
+    }
+
+    /**
+     * Cancel current subscription
+     *
+     * @return boolean|array
+     */    
+    public function CancelSubscription($TenantId)
+    {
+        $this->checkAccess($TenantId);
+
+        $result = false;
+
+        $subscriptionId = self::Decorator()->GetActiveSubscriptionId($TenantId);
+        if ($subscriptionId) {
+            try {
+                $subscription = \Stripe\Subscription::retrieve($subscriptionId);
+                if($subscription) {
+                    $subscription->cancel();
+                    $result = true;
+                }
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                Api::LogException($e);
+                $result = false;
+            }
+        }
+
+        return $result;
     }
 }

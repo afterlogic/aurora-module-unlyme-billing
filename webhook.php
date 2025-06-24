@@ -24,8 +24,12 @@ try {
     exit();
 }
 
+\Aurora\System\Api::LogObject($event, LogLevel::Full, 'stripe-webhook-');
+
 if ($event && $event->type == 'checkout.session.completed') {
     $session = $event->data->object;
+
+    \Aurora\System\Api::LogObject($session, LogLevel::Full, 'stripe-webhook-');
 
     $tenantId = $session->metadata->TenantId;
     if ($tenantId) {
@@ -39,6 +43,16 @@ if ($event && $event->type == 'checkout.session.completed') {
             $quantity = $line_items[0]->quantity;
             $prev = \Aurora\System\Api::skipCheckUserRole(true);
             $result = $module->Decorator()->UpdateBusinessTenantUserSlot($tenantId, $quantity);
+            if ($result) {
+
+                if (!$module->Decorator()->GetActiveSubscriptionId($tenantId)) {
+                    $result = $module->Decorator()->SetSubscription($tenantId, $session->subscription);
+                } else {
+                    \Aurora\System\Api::LogObject('Tenant: ' . $tenantId . ' already has an active subscription', LogLevel::Full, 'stripe-webhook-');
+
+                    http_response_code(400);
+                }
+            }
             $prev = \Aurora\System\Api::skipCheckUserRole(true);
             if ($result) {
                 \Aurora\System\Api::LogObject('Successfully updated user slots: ' . $quantity . ' for tenant: ' . $tenantId, LogLevel::Full, 'stripe-webhook-');
