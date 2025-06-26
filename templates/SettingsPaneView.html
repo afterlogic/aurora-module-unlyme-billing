@@ -1,0 +1,58 @@
+<div class="panel_top">
+    <h2 class="settings_heading" data-bind="i18n: {'key': '%MODULENAME%/LABEL_BILLING_SETTINGS_TAB'}"></h2>
+</div>
+<div class="panel_center">
+    <div class="fields">
+        <div class="fieldset">
+            <div class="row">
+                <span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SUBSCRIPTION_STATUS'}"></span>
+                <span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SUBSCRIPTION_AMOUNT'}"></span>
+                <span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SUBSCRIPTION_CURRENCY'}"></span>
+                <span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SUBSCRIPTION_INTERVAL'}"></span>
+                <span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SUBSCRIPTION_NEXT_PAYMENT'}"></span>
+            </div>
+            <div class="row" data-bind="foreach: subscriptions">
+                <span class="value" data-bind="text: $data.Status()"></span>
+                <span class="value" data-bind="text: $data.Amount"></span>
+                <span class="value" data-bind="text: $data.Currency"></span>
+                <span class="value" data-bind="text: $data.Interval"></span>
+                <span class="value" data-bind="text: $data.NextPayment"></span>
+				<span class="value">
+					<div class="row">
+						<span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SUBSCRIPTION_INVOICES'}"></span>
+						<div class="invoices-container">
+							<div class="fields">
+								<div class="fieldset">
+									<div class="row">
+										<span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_INVOCE_CREATED'}"></span>
+										<span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_INVOCE_DESCRIPTION'}"></span>
+										<span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_INVOCE_AMOUNT_DUE'}"></span>
+										<span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_INVOCE_CURRENCY'}"></span>
+										<span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_INVOCE_STATUS'}"></span>
+									</div>
+									<div class="row" data-bind="foreach: $data.Invoices">
+										<span class="value" data-bind="text: Created"></span>
+										<span class="value" data-bind="text: Description"></span>
+										<span class="value" data-bind="text: AmountDue"></span>
+										<span class="value" data-bind="text: Currency"></span>
+										<span class="value" data-bind="text: Status"></span>
+										<span class="value">
+											<a data-bind="attr: { href: Url, target:'_blank'}, i18n: {'key': '%MODULENAME%/LINK_TO_INVOCE'}"></a>
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</span>
+				<span class="value">
+					<div class="buttons" data-bind="visible: Status() == 'active'">
+						<span class="button" data-bind="click: $parents[1].cancelSubscriptionBind">
+							<span data-bind="i18n: {'key': '%MODULENAME%/ACTION_CANCEL_SUBSCRIPTION'}"></span>
+						</span>
+					</div>
+				</span>
+            </div>
+        </div>
+    </div>
+</div>

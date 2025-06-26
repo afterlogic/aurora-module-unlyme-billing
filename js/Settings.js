@@ -7,6 +7,7 @@ var
 ;
 
 module.exports = {
+	HashModuleName: 'unlyme-billing',
 	ServerModuleName: '%ModuleName%',
 
 	PaymentLink: '',

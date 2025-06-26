@@ -656,9 +656,9 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->checkAccess($TenantId);
 
         $subscriptionsInfo = self::Decorator()->GetSubscriptionsInfo($TenantId);
-        foreach ($subscriptionsInfo as $id => $subInfo) {
+        foreach ($subscriptionsInfo as $subInfo) {
             if ($subInfo['Status'] === 'active') {
-                $activeSubscriptionId = $id;
+                $activeSubscriptionId = $subInfo['Id'];
                 break;
             }
         }
@@ -686,26 +686,29 @@ class Module extends \Aurora\System\Module\AbstractModule
                         if($subscription) {
 
                             $subscriptionInfo = [
+                                'Id' => $subscription->id,
                                 'Status' => $subscription->status,
                                 'Amount' => $subscription->plan->amount / 100,
                                 'Currency' => $subscription->plan->currency,
                                 'Interval' => $subscription->plan->interval,
-                                'NextPayment' => $subscription->current_period_end,
+                                'NextPayment' => date('Y-m-d H:i:s', $subscription->current_period_end),
                                 'Invoices' => []
                             ];
             
                             $invoices = \Stripe\Invoice::all(['subscription' => $subscription->id]);
                             foreach ($invoices->data as $invoice) {
-                                $subscriptionInfo['Invoices'][$invoice->id] = [
+                                $subscriptionInfo['Invoices'][] = [
+                                    'Id' => $invoice->id,
                                     'Description' => $invoice->lines->data[0]->description,
                                     'AmountDue' => $invoice->amount_due / 100,
                                     'Currency' => $invoice->currency,
                                     'Status' => $invoice->status,
-                                    'Created' => $invoice->created
+                                    'Created' => date('Y-m-d H:i:s', $invoice->created),
+                                    'Url' => $invoice->hosted_invoice_url,
                                 ];
                             }
 
-                            $subscriptionsInfo[$subscription->id] = $subscriptionInfo;
+                            $subscriptionsInfo[] = $subscriptionInfo;
                         }
                     } catch (\Stripe\Exception\ApiErrorException $e) {
                         Api::LogException($e);
@@ -721,7 +724,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     /**
      * Cancel current subscription
      *
-     * @return boolean|array
+     * @return boolean|string
      */    
     public function CancelSubscription($TenantId)
     {
@@ -735,7 +738,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $subscription = \Stripe\Subscription::retrieve($subscriptionId);
                 if($subscription) {
                     $subscription->cancel();
-                    $result = true;
+                    $result = $subscriptionId;
                 }
             } catch (\Stripe\Exception\ApiErrorException $e) {
                 Api::LogException($e);
