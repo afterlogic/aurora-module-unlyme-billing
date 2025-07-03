@@ -11,7 +11,6 @@ use Aurora\System\Api;
 use Aurora\Modules\Core\Models\User;
 use Aurora\Modules\Core\Models\Tenant;
 use Aurora\System\Enums\UserRole;
-use Stripe\StripeClient;
 
 /**
  * Provides user groups.
@@ -26,6 +25,8 @@ use Stripe\StripeClient;
  */
 class Module extends \Aurora\System\Module\AbstractModule
 {
+    protected $stripeInitialized = false;
+
     public function init()
     {
         // @TODO review MailQuota check
@@ -41,7 +42,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Mail::CreateAccount::before', array($this, 'onBeforeCreateAccount'));
         $this->subscribeEvent('Mail::IsEmailAllowedForCreation::after', array($this, 'onAfterIsEmailAllowedForCreation'));
 
-        $oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
+        $oAuthenticatedUser = Api::getAuthenticatedUser();
 
         if ($oAuthenticatedUser instanceof User) {
             if ($oAuthenticatedUser->Role === UserRole::SuperAdmin) {
@@ -97,13 +98,26 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     protected function initStripe()
     {
+        if (!$this->stripeInitialized) {
+            $secretKey = $this->getConfig('StripeSecretKey', '');
+            if (!empty($secretKey)) {
+                \Stripe\Stripe::setApiKey($secretKey);
+                $this->stripeInitialized = true;
+            }
+        }
+    }
+
+    protected function initStripeWebHook()
+    {
         $webhook_exists = false;
         $webhookUrl = $this->getConfig('StripeWebhookUrl', '');
-        $secretKey = $this->getConfig('StripeSecretKey', '');
 
-        if (!empty($webhookUrl) && !empty($secretKey)) {
-            \Stripe\Stripe::setApiKey($secretKey);
-            $webhooks = \Stripe\WebhookEndpoint::all();
+        if (!empty($webhookUrl)) {
+            try {
+                $webhooks = \Stripe\WebhookEndpoint::all();
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                Api::LogException($e);
+            }
             foreach ($webhooks->data as $webhook) {
                 if ($webhook->url === $webhookUrl) {
                     $webhook_exists = true;
@@ -122,13 +136,11 @@ class Module extends \Aurora\System\Module\AbstractModule
                         ],
                     ]);
                 } catch (\Stripe\Exception\ApiErrorException $e) {
-                    // TODO:
+                    Api::LogException($e);
                 }
-            } else {
-                // TODO:
             }
         } else {
-            // TODO:
+            Api::Log('StripeWebhookUrl setting not configured');
         }
     }
 
@@ -136,10 +148,10 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $sAccountName = \MailSo\Base\Utils::GetAccountNameFromEmail($sEmail);
         $sDomain = \MailSo\Base\Utils::GetDomainFromEmail($sEmail);
-        $oMailDomains = \Aurora\System\Api::GetModuleDecorator('MailDomains');
+        $oMailDomains = Api::GetModuleDecorator('MailDomains');
         $aDomains = [];
         if ($oMailDomains) {
-            $aDomainObjects = \Aurora\System\Api::GetModuleDecorator('MailDomains')->getDomainsManager()->getFullDomainsList();
+            $aDomainObjects = Api::GetModuleDecorator('MailDomains')->getDomainsManager()->getFullDomainsList();
             $aDomains = $aDomainObjects->map(function ($oDomain) {
                 return $oDomain->Name;
             })->toArray();
@@ -190,7 +202,7 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function UpdateGroupwareState($TenantId, $EnableGroupware = false)
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+        Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
         return $this->setGroupwareState($TenantId, $EnableGroupware);
     }
@@ -246,7 +258,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         //@ TODO: check if Forced argument is used
         if (isset($aArgs['PublicId']) && $this->checkIfEmailReserved($aArgs['PublicId'])) {
-            $oUser = \Aurora\System\Api::getAuthenticatedUser();
+            $oUser = Api::getAuthenticatedUser();
             if ($oUser instanceof User && ($oUser->Role === UserRole::SuperAdmin || $oUser->Role === UserRole::TenantAdmin)
                 // && isset($aArgs['Forced']) && $aArgs['Forced'] === true
             ) {
@@ -260,7 +272,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onBeforeCreateAccount($aArgs, &$mResult)
     {
         if (isset($aArgs['Email']) && $this->checkIfEmailReserved($aArgs['Email'])) {
-            $oUser = \Aurora\System\Api::getAuthenticatedUser();
+            $oUser = Api::getAuthenticatedUser();
             if ($oUser instanceof User && ($oUser->Role === UserRole::SuperAdmin || $oUser->Role === UserRole::TenantAdmin)) {
                 //Only SuperAdmin or TenantAdmin can create Account if it was reserved
             } else {
@@ -395,7 +407,7 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function UpdateBusinessTenantLimits($TenantId, $AliasesCount, $EmailAccountsCount, $MailStorageQuotaMb, $FilesStorageQuotaMb)
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+        Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
         $oTenant = Api::getTenantById($TenantId);
         if ($oTenant instanceof Tenant && $oTenant->{self::GetName() . '::IsBusiness'}) {
@@ -466,18 +478,21 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function GetSettings($TenantId = null)
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
+        Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
 
         $bIsBusiness = false;
         $sIsGroupwareEnabled = false;
         $iUserSlots = 0;
 
-        $oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
+        $oAuthenticatedUser = Api::getAuthenticatedUser();
         $TenantId = $TenantId ?? $oAuthenticatedUser->IdTenant;
         $paymentLink = '';
 
-        $oTenant = \Aurora\System\Api::getTenantById($TenantId);
+        $oTenant = Api::getTenantById($TenantId);
         if ($oTenant && ($oAuthenticatedUser->isAdmin() || $oAuthenticatedUser->IdTenant === $oTenant->Id)) {
+
+            $this->initStripeWebHook();
+
             $bIsBusiness = (bool) $oTenant->{self::GetName() . '::IsBusiness'};
             $sIsGroupwareEnabled = (bool) $oTenant->{self::GetName() . '::IsGroupwareEnabled'};
             $iUserSlots = (int) $oTenant->{self::GetName() . '::UserSlots'};
@@ -487,7 +502,6 @@ class Module extends \Aurora\System\Module\AbstractModule
             $priceId = $this->getConfig('StripePriceId', '');
             if (empty($paymentLink) && !empty($secretKey) && !empty($priceId)) {
                 try {
-
                     $paymentLinkObj = \Stripe\PaymentLink::create([
                         'line_items' => [
                             [
@@ -531,11 +545,11 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function UpdateSettings($TenantId, $IsBusiness, $IsGroupwareEnabled)
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+        Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
         $bResult = false;
 
-        $oTenant = \Aurora\System\Api::getTenantById($TenantId);
+        $oTenant = Api::getTenantById($TenantId);
 
         if ($oTenant) {
             $oTenant->{self::GetName() . '::IsBusiness'} = (bool) $IsBusiness;
@@ -556,7 +570,7 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function GetReservedNames()
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+        Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
         return $this->oModuleSettings->ReservedList;
     }
@@ -569,7 +583,7 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function AddNewReservedName($AccountName)
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+        Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
         $bResult = false;
         $sAccountName = strtolower($AccountName);
@@ -598,7 +612,7 @@ class Module extends \Aurora\System\Module\AbstractModule
      */
     public function DeleteReservedNames($ReservedNames)
     {
-        \Aurora\System\Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
+        Api::checkUserRoleIsAtLeast(UserRole::SuperAdmin);
 
         $bResult = false;
 
