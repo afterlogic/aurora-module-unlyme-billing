@@ -2,7 +2,22 @@
     <h2 class="settings_heading" data-bind="i18n: {'key': '%MODULENAME%/LABEL_BILLING_SETTINGS_TAB'}"></h2>
 </div>
 <div class="panel_center">
-    <div class="fields">
+	<div class="fields" data-bind="visible: needsUpgrade">
+        <div class="fieldset">
+			<div class="row">
+				<span class="value" data-bind="i18n: {'key': '%MODULENAME%/UPGARDE_NOW_INFO'}"></span>
+            </div>
+            <div class="row">
+				<a href="#" target="_blank" class="item upsale-link" data-bind="attr: {'href': sLink}">
+					<span class="link">
+						<span class="icon"></span>
+						<span class="text" data-bind="i18n: {'key': '%MODULENAME%/UPRGADE_NOW'}"></span>
+					</span>
+				</a>
+            </div>
+		</div>
+	</div>
+    <div class="fields" data-bind="visible: hasSubscriptions">
         <div class="fieldset">
             <div class="row">
                 <span class="label" style="font-weight: bold;" data-bind="i18n: {'key': '%MODULENAME%/LABEL_SUBSCRIPTION_STATUS'}"></span>

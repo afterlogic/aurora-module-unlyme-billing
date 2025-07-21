@@ -16,8 +16,21 @@ var
  */
 function CSettingsPaneView()
 {
+	this.hasSubscriptions = ko.observable(false);
+	this.needsUpgrade = ko.observable(false);
+
 	this.subscriptions = ko.observableArray([]);
 	this.cancelSubscriptionBind = _.bind(this.cancelSubscription, this);
+	this.sLink = Settings.PaymentLink;
+	this.subscriptions.subscribe(function (subscriptions) {
+		if (subscriptions.length > 0) {
+			this.hasSubscriptions(true);
+			this.needsUpgrade(false)
+		} else {
+			this.hasSubscriptions(false);
+			this.needsUpgrade(true)
+		}
+	}, this);
 }
 
 CSettingsPaneView.prototype.ViewTemplate = '%ModuleName%_SettingsPaneView';
