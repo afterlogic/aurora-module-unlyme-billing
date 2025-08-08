@@ -480,6 +480,8 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         Api::checkUserRoleIsAtLeast(UserRole::NormalUser);
 
+        $mResult = null;
+
         $bIsBusiness = false;
         $sIsGroupwareEnabled = false;
         $iUserSlots = 0;
@@ -525,14 +527,16 @@ class Module extends \Aurora\System\Module\AbstractModule
                 } catch (\Exception $e) {
                 }
             }
+
+            $mResult = array(
+                'IsBusiness' => $bIsBusiness,
+                'IsGroupwareEnabled' => $sIsGroupwareEnabled,
+                'UserSlots' => $iUserSlots,
+                'PaymentLink' => !self::Decorator()->GetActiveSubscriptionId($TenantId) ? $paymentLink : ''
+            );
         }
 
-        return array(
-            'IsBusiness' => $bIsBusiness,
-            'IsGroupwareEnabled' => $sIsGroupwareEnabled,
-            'UserSlots' => $iUserSlots,
-            'PaymentLink' => !self::Decorator()->GetActiveSubscriptionId($TenantId) ? $paymentLink : ''
-        );
+        return $mResult;
     }
 
     /**
@@ -633,7 +637,12 @@ class Module extends \Aurora\System\Module\AbstractModule
     protected function checkAccess($TenantId)
     {
         $oUser = Api::getAuthenticatedUser();
-        if ($oUser && (($oUser->Role === UserRole::TenantAdmin  && $oUser->IdTenant !== $TenantId) || $oUser->Role === UserRole::SuperAdmin)) {
+
+        if (!$oUser || (
+                ($oUser->Role === UserRole::TenantAdmin && $oUser->IdTenant !== $TenantId) ||
+                ($oUser->Role !== UserRole::SuperAdmin && $oUser->Role !== UserRole::TenantAdmin)
+            )
+        ) {
             throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied, null, 'AccessDenied');
         }
     }
