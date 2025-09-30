@@ -1,33 +1,35 @@
-.tabsbar > .content > .item.upsale-link {
-    position: fixed;
-    top: 6px;
-    right: 75px;
-    margin: 0 !important;
-	z-index: 1;
-
-	background: rgba(248, 250, 252, 0.5);
-    border-radius: 8px;
-    color: #727272;
+html:not(.app-public) {
+	.tabsbar > .content > .item.upsale-link {
+		position: fixed;
+		top: 6px;
+		right: 75px;
+		margin: 0 !important;
+		z-index: 1;
 	
-	.link {
-		width: auto;
-		align-items: center;
-		justify-content: center;
-		padding: 6px 12px;
-
-		.text {
-			font-size: 16px;
+		background: rgba(248, 250, 252, 0.5);
+		border-radius: 8px;
+		color: #727272;
+	
+		.link {
+			width: auto;
+			align-items: center;
+			justify-content: center;
+			padding: 6px 12px;
+	
+			.text {
+				font-size: 16px;
+			}
 		}
 	}
-}
-
-.tabsbar > .content > .item.upsale-link .link .icon,
-.panels.settings .navigation_panel .item.unlyme-billing .icon {
-	background: url('../../images/modules/UnlymeBilling/upgrade.svg');
-	width: 20px;
-	height: 20px;
-	background-size: cover !important;
-	position: static;
-	transform: none;
-	margin-right: 12px;
+	
+	.tabsbar > .content > .item.upsale-link .link .icon,
+	.panels.settings .navigation_panel .item.unlyme-billing .icon {
+		background: url('../../images/modules/UnlymeBilling/upgrade.svg');
+		width: 20px;
+		height: 20px;
+		background-size: cover !important;
+		position: static;
+		transform: none;
+		margin-right: 12px;
+	}
 }
