@@ -115,14 +115,15 @@ class Module extends \Aurora\System\Module\AbstractModule
         if (!empty($webhookUrl)) {
             try {
                 $webhooks = \Stripe\WebhookEndpoint::all();
+
+                foreach ($webhooks->data as $webhook) {
+                    if ($webhook->url === $webhookUrl) {
+                        $webhook_exists = true;
+                        break;
+                    }
+                }
             } catch (\Stripe\Exception\ApiErrorException $e) {
                 Api::LogException($e);
-            }
-            foreach ($webhooks->data as $webhook) {
-                if ($webhook->url === $webhookUrl) {
-                    $webhook_exists = true;
-                    break;
-                }
             }
 
             if (!$webhook_exists) {
@@ -148,10 +149,11 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $sAccountName = \MailSo\Base\Utils::GetAccountNameFromEmail($sEmail);
         $sDomain = \MailSo\Base\Utils::GetDomainFromEmail($sEmail);
+        /** @var \Aurora\Modules\MailDomains\Module $oMailDomains */
         $oMailDomains = Api::GetModuleDecorator('MailDomains');
         $aDomains = [];
         if ($oMailDomains) {
-            $aDomainObjects = Api::GetModuleDecorator('MailDomains')->getDomainsManager()->getFullDomainsList();
+            $aDomainObjects = $oMailDomains->getDomainsManager()->getFullDomainsList();
             $aDomains = $aDomainObjects->map(function ($oDomain) {
                 return $oDomain->Name;
             })->toArray();
@@ -292,8 +294,8 @@ class Module extends \Aurora\System\Module\AbstractModule
             if ($oUser instanceof User) {
                 $oTenant = Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant) {
-                    if ($oTenant->{self::GetName() . '::IsBusiness'}) {
-                        $UserSpaceLimitMb = $oTenant->{'Files::UserSpaceLimitMb'};
+                    if ($oTenant->getExtendedProp(self::GetName() . '::IsBusiness' , false)) {
+                        $UserSpaceLimitMb = $oTenant->getExtendedProp('Files::UserSpaceLimitMb');
 
                         \Aurora\Modules\Files\Module::Decorator()->CheckAllocatedSpaceLimitForUsersInTenant($oTenant, $UserSpaceLimitMb);
 
@@ -319,8 +321,8 @@ class Module extends \Aurora\System\Module\AbstractModule
             if ($oUser instanceof User) {
                 $oTenant = Api::getTenantById($oUser->IdTenant);
                 if ($oTenant instanceof Tenant && $oUser->PublicId === $oAccount->Email) {
-                    if ($oTenant->{self::GetName() . '::IsBusiness'}) {
-                        $iMailQuotaMb = $oTenant->{'Mail::UserSpaceLimitMb'};
+                    if ($oTenant->getExtendedProp(self::GetName() . '::IsBusiness', false)) {
+                        $iMailQuotaMb = $oTenant->getExtendedProp('Mail::UserSpaceLimitMb');
                         \Aurora\Modules\Mail\Module::Decorator()->UpdateEntitySpaceLimits('User', $oUser->Id, $oUser->IdTenant, null, $iMailQuotaMb);
                     }
                 }
@@ -420,7 +422,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $oTenant->setExtendedProp(self::GetName() . '::EmailAccountsCount', $EmailAccountsCount);
                 $aAttributesToSave[] = self::GetName() . '::EmailAccountsCount';
             }
-            if (!empty($aAttributesToSave)) {
+            if (count($aAttributesToSave) > 0) {
                 $oTenant->save();
             }
             if (is_int($MailStorageQuotaMb)) {
@@ -582,7 +584,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     /**
      * Adds a new item to the reserved list
      *
-     * @param string AccountName
+     * @param string $AccountName
      * @return boolean
      */
     public function AddNewReservedName($AccountName)
@@ -611,7 +613,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     /**
      * Removes the specified names from the list
      *
-     * @param array ReservedNames
+     * @param array $ReservedNames
      * @return boolean
      */
     public function DeleteReservedNames($ReservedNames)
@@ -711,9 +713,9 @@ class Module extends \Aurora\System\Module\AbstractModule
                             $subscriptionInfo = [
                                 'Id' => $subscription->id,
                                 'Status' => $subscription->status,
-                                'Amount' => $subscription->plan->amount / 100,
-                                'Currency' => $subscription->plan->currency,
-                                'Interval' => $subscription->plan->interval,
+                                'Amount' => isset($subscription->plan) ? $subscription->plan->amount / 100 : 0,
+                                'Currency' => isset($subscription->plan) ? $subscription->plan->currency : '',
+                                'Interval' => isset($subscription->plan) ? $subscription->plan->interval : '',
                                 'NextPayment' => date('Y-m-d H:i:s', $subscription->current_period_end),
                                 'Invoices' => []
                             ];

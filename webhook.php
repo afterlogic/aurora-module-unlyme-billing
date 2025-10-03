@@ -6,12 +6,18 @@ require_once \dirname(__file__) . "/../../system/autoload.php";
 
 \Aurora\System\Api::Init();
 
-$module = \Aurora\modules\UnlymeBilling\Module::getInstance();
+$module = \Aurora\Modules\UnlymeBilling\Module::getInstance();
 $secretKey = $module->getConfig('StripeSecretKey', '');
 
 \Stripe\Stripe::setApiKey($secretKey);
 
 $payload = @file_get_contents('php://input');
+
+if (!$payload){
+    http_response_code(400);
+    exit();
+} 
+
 $event = null;
 
 try {
@@ -26,12 +32,15 @@ try {
 
 \Aurora\System\Api::LogObject($event, LogLevel::Full, 'stripe-webhook-');
 
+/** @var \Stripe\Event $event */
 if ($event && $event->type == 'checkout.session.completed') {
-    $session = $event->data->object;
+    /** @var \Stripe\Checkout\Session $session */
+    $session = $event->data['object']; 
+    assert($session instanceof \Stripe\Checkout\Session);
 
     \Aurora\System\Api::LogObject($session, LogLevel::Full, 'stripe-webhook-');
 
-    $tenantId = $session->metadata->TenantId;
+    $tenantId = $session->metadata->TenantId ?? null;
     if ($tenantId) {
         $session_details = \Stripe\Checkout\Session::retrieve([
             'id' => $session->id,
